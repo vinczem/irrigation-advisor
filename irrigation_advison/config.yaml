@@ -1,5 +1,5 @@
 name: "Irrigation Advisor"
-version: "2.1.20250828_1941"
+version: "2.1.20250828_2101"
 slug: "irrigation_advisor"  
 description: "Simple irrigation advisor with automatic scheduler and timestamped logging"
 url: "https://github.com/vinczem/irrigation-advisor"
@@ -29,7 +29,7 @@ schema:
   mqtt_username: "str?"
   mqtt_password: "str?"
   enable_auto_check: "bool"
-  check_interval_minutes: "int(5,1440)"  # 5 minutes to 24 hours
+  check_interval_minutes: "int(1,1440)"  # 1 minutes to 24 hours
   log_level: "list(debug|info|warning|error)"
 services:
   - "mqtt:want"
