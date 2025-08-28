@@ -1,0 +1,12 @@
+{
+  "api_key": "test_api_key_usr/bin/data/options.json",
+  "lat": 46.65,
+  "lon": 20.14,
+  "latitude": 46.65,
+  "longitude": 20.14,
+  "mqtt_broker": "192.168.0.98",
+  "mqtt_port": 2883,
+  "mqtt_username": "",
+  "mqtt_password": "",
+  "units": "metric"
+}
