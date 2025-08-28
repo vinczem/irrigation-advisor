@@ -35,6 +35,11 @@ else
     exit 1
 fi
 
+# check if options.json exists
+if [ ! -f /usr/bin/data/options.json ]; then
+    bashio::log.error "❌ options.json not found"
+    exit 1
+fi
 # Create options.json for Python scripts
 cat > /usr/bin/data/options.json << EOF
 {
