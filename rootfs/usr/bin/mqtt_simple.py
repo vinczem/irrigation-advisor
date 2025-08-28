@@ -3,6 +3,8 @@
 Egyszerű MQTT Publisher az öntözési rendszerhez
 """
 
+print("> usr/data/mqtt_simple")
+
 import json
 import sys
 import os
@@ -27,6 +29,7 @@ CONFIG_FILE = os.path.join(DATA_DIR, "options.json")
 
 def load_addon_config():
     """Load configuration from Home Assistant addon options"""
+    print("mqtt_simple : Loading addon config...")
     try:
         with open(CONFIG_FILE, 'r') as f:
             config = json.load(f)
@@ -132,6 +135,7 @@ def check_recent_irrigation_state(message):
 
 def publish_simple_message(message):
     """Publish simple message to MQTT - both raw JSON and individual values"""
+    print("mqtt_simple : Publishing message...")
     
     # Load MQTT configuration
     mqtt_config = load_addon_config()
@@ -195,7 +199,8 @@ def publish_simple_message(message):
 
 def main():
     """Main function with state tracking"""
-    
+    print("mqtt_simple : Starting main function...")
+
     print("📡 MQTT PUBLISHER WITH STATE TRACKING")
     print("=" * 40)
     
