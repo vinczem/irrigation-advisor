@@ -170,6 +170,10 @@ irrigation_scheduler() {
 
             # Run irrigation check with enhanced logging
             if python3 /usr/bin/mqtt_simple.py > /tmp/irrigation_check.log 2>&1; then
+
+                with open('/tmp/irrigation_check.log', 'r') as f:
+                    print(f.read())
+
                 current_time=$(date '+%Y-%m-%d %H:%M:%S')
                 echo "✅ [${current_time}] Automatic irrigation check completed successfully"
 
