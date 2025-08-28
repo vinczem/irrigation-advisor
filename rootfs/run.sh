@@ -69,7 +69,7 @@ export PYTHONPATH="/usr/bin:$PYTHONPATH"
 
 
 # Start health check service in background
-bashio::log.info "🏥 Starting health check service..."
+echo "🏥 Starting health check service..."
 python3 -c "
 import http.server
 import socketserver
@@ -97,14 +97,14 @@ with socketserver.TCPServer(('', 8099), HealthHandler) as httpd:
 " &
 
 HEALTH_PID=$!
-bashio::log.info "🏥 Health check service started (PID: $HEALTH_PID)"
+echo "🏥 Health check service started (PID: $HEALTH_PID)"
 
 
 
 # Start background services
 python3 /usr/bin/mqtt_service.py &
 SERVICE_PID=$!
-bashio::log.info "� MQTT service started (PID: $SERVICE_PID)"
+echo "� MQTT service started (PID: $SERVICE_PID)"
 
 
 
@@ -134,15 +134,15 @@ with socketserver.TCPServer(('', 8099), HealthHandler) as httpd:
     httpd.serve_forever()
 " &
 HEALTH_PID=$!
-bashio::log.info "� Health service started on port 8099 (PID: $HEALTH_PID)"
+echo "🏥 Health service started on port 8099 (PID: $HEALTH_PID)"
 
 # Function to handle shutdown
 cleanup() {
-    bashio::log.info "🛑 Shutting down services..."
+    echo "🛑 Shutting down services..."
     kill $SERVICE_PID 2>/dev/null || true
     kill $HEALTH_PID 2>/dev/null || true
     kill $SCHEDULER_PID 2>/dev/null || true
-    bashio::log.info "🛑 Services stopped."
+    echo "🛑 Services stopped."
     exit 0
 }
 
@@ -154,39 +154,39 @@ irrigation_scheduler() {
     local ENABLE_AUTO_CHECK=$(bashio::config 'enable_auto_check' 'true')
     local next_check_time
     local current_time
-    
-    bashio::log.info "🕒 Scheduler started: checks every $CHECK_INTERVAL_MINUTES minutes"
-    bashio::log.info "🤖 Auto checks enabled: $ENABLE_AUTO_CHECK"
-    bashio::log.info "[DEBUG] ENABLE_AUTO_CHECK értéke: $ENABLE_AUTO_CHECK"
-    
+
+    echo "🕒 Scheduler started: checks every $CHECK_INTERVAL_MINUTES minutes"
+    echo "🤖 Auto checks enabled: $ENABLE_AUTO_CHECK"
+    echo "[DEBUG] ENABLE_AUTO_CHECK értéke: $ENABLE_AUTO_CHECK"
+
     # Calculate and log next check time
     next_check_time=$(date -d "+${CHECK_INTERVAL_MINUTES} minutes" '+%Y-%m-%d %H:%M:%S')
-    bashio::log.info "⏰ Next irrigation check scheduled for: $next_check_time"
-    
+    echo "⏰ Next irrigation check scheduled for: $next_check_time"
+
     while true; do
         if [[ "$ENABLE_AUTO_CHECK" == "true" ]]; then
             current_time=$(date '+%Y-%m-%d %H:%M:%S')
-            bashio::log.info "🌱 [${current_time}] Starting automatic irrigation check (interval: ${CHECK_INTERVAL_MINUTES}min)..."
-            
+            echo "🌱 [${current_time}] Starting automatic irrigation check (interval: ${CHECK_INTERVAL_MINUTES}min)..."
+
             # Run irrigation check with enhanced logging
             if python3 /usr/bin/mqtt_simple.py > /tmp/irrigation_check.log 2>&1; then
                 current_time=$(date '+%Y-%m-%d %H:%M:%S')
-                bashio::log.info "✅ [${current_time}] Automatic irrigation check completed successfully"
-                
+                echo "✅ [${current_time}] Automatic irrigation check completed successfully"
+
                 # Log basic results if available
                 if [ -f "/tmp/irrigation_check.log" ]; then
                     if grep -q "watering_required" /tmp/irrigation_check.log; then
                         local watering_status=$(grep "watering_required" /tmp/irrigation_check.log | tail -1)
-                        bashio::log.info "📊 Result: $watering_status"
+                        echo "📊 Result: $watering_status"
                     fi
                 fi
             else
                 current_time=$(date '+%Y-%m-%d %H:%M:%S')
-                bashio::log.warning "⚠️  [${current_time}] Automatic irrigation check failed!"
-                bashio::log.warning "📋 Error log content:"
+                echo "⚠️  [${current_time}] Automatic irrigation check failed!"
+                echo "📋 Error log content:"
                 if [ -f "/tmp/irrigation_check.log" ]; then
                     cat /tmp/irrigation_check.log | while IFS= read -r line; do
-                        bashio::log.warning "   $line"
+                        echo "   $line"
                     done
                 fi
             fi
