@@ -1,6 +1,7 @@
-
 #!/bin/bash
 # Home Assistant Addon Entry Point - Service Mode Only
+
+set -e
 
 # Configuration
 CONFIG_PATH=/data/options.json
@@ -13,6 +14,7 @@ echo "   state_path = $STATE_PATH"
 # Create required directories
 mkdir -p /data
 mkdir -p /share/irrigation
+
 
 # Load configuration from options.json using jq
 if [ -f "$CONFIG_PATH" ]; then
@@ -33,9 +35,6 @@ if [ -f "$CONFIG_PATH" ]; then
 else
     echo "❌ No configuration found at $CONFIG_PATH"
     exit 1
-fi
-
-# ...existing code...
 fi
 
 # Create options.json for Python scripts
@@ -275,3 +274,4 @@ with socketserver.TCPServer(('', 8099), HealthHandler) as httpd:
     fi
     sleep 30
 done
+echo "✅ Irrigation Advisor Addon is running"
