@@ -1,0 +1,48 @@
+# Shell Commands for Irrigation System (HA OS 2025 Compatible)
+# Add these to your Home Assistant configuration.yaml
+
+# NOTE: In HA OS 2025, direct docker commands don't work
+# Use hassio.addon_stdin service instead in scripts
+
+# These are kept for reference but won't work in HA OS:
+# shell_command:
+#   irrigation_check: docker exec addon_local_irrigation_advisor_simple python3 /usr/bin/mqtt_simple.py
+
+# HA OS 2025 Compatible approach - use these in scripts:
+# action: hassio.addon_stdin
+# data:
+#   addon: "local_irrigation_advisor_simple" 
+#   input: "python3 /usr/bin/mqtt_simple.py"
+
+# Alternative: Use addon's built-in web interface if available
+rest_command:
+  irrigation_check_rest:
+    url: "http://local-irrigation-advisor-simple:8080/check"
+    method: GET
+    timeout: 30
+    
+  irrigation_debug_rest:
+    url: "http://local-irrigation-advisor-simple:8080/debug" 
+    method: GET
+    timeout: 15
+
+# ========================================
+# IMPORTANT: Scripts go in a separate section!
+# ========================================
+# Add this to your configuration.yaml as a separate section:
+#
+# script:
+#   refresh_irrigation:
+#     alias: "🔄 Refresh Irrigation Forecast"
+#     description: "Manual irrigation forecast update"
+#     icon: mdi:refresh-circle
+#     mode: single
+#     sequence:
+#       - service: shell_command.irrigation_check
+#       - delay: 
+#           seconds: 10
+#       - service: notify.persistent_notification
+#         data:
+#           title: "Irrigation Updated"
+#           message: "Forecast refreshed at {{ now().strftime('%H:%M') }}"
+#           notification_id: "irrigation_manual_refresh"

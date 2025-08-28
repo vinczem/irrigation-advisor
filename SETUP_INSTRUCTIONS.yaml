@@ -1,0 +1,80 @@
+# SETUP INSTRUCTIONS
+# Copy these configurations to your Home Assistant configuration.yaml
+
+# ==========================
+# 1. SHELL COMMANDS (REQUIRED)
+# ==========================
+shell_command:
+  irrigation_check: >
+    docker exec addon_local_irrigation_advisor_simple 
+    python3 /usr/bin/mqtt_simple.py
+  
+  irrigation_force_update: >
+    docker exec addon_local_irrigation_advisor_simple 
+    python3 /usr/bin/mqtt_simple.py --force
+  
+  debug_irrigation_config: >
+    docker exec addon_local_irrigation_advisor_simple 
+    python3 /usr/bin/debug_config.py
+    
+  irrigation_system_status: >
+    docker exec addon_local_irrigation_advisor_simple 
+    python3 /usr/bin/irrigation_cli.py status
+
+# ==========================  
+# 2. SCRIPTS (OPTIONAL)
+# ==========================
+script:
+  refresh_irrigation:
+    alias: "🔄 Refresh Irrigation Forecast"
+    description: "Manual irrigation forecast update"
+    icon: mdi:refresh-circle
+    mode: single
+    action:
+      - action: shell_command.irrigation_check
+      - delay: 
+          seconds: 10
+      - action: notify.persistent_notification
+        data:
+          title: "✅ Irrigation Updated"
+          message: "Forecast refreshed at {{ now().strftime('%H:%M') }}"
+          notification_id: "irrigation_manual_refresh"
+
+# ==========================
+# 3. MQTT SENSORS (REQUIRED)
+# ==========================
+mqtt:
+  sensor:
+    - name: "Irrigation Required"
+      unique_id: "irrigation_required"
+      state_topic: "irrigation/scheduler/watering_required"
+      icon: mdi:water-pump
+      
+    - name: "Water Amount"
+      unique_id: "irrigation_water_amount"
+      state_topic: "irrigation/scheduler/water_amount"
+      unit_of_measurement: "L/m²"
+      icon: mdi:water
+      device_class: volume
+      state_class: measurement
+      
+    - name: "Irrigation Reason"
+      unique_id: "irrigation_reason"
+      state_topic: "irrigation/scheduler/reason"
+      icon: mdi:information-outline
+
+  binary_sensor:
+    - name: "Garden Needs Watering"
+      unique_id: "garden_needs_watering"
+      state_topic: "irrigation/scheduler/watering_required"
+      payload_on: "true"
+      payload_off: "false"
+      device_class: problem
+      icon: mdi:sprinkler
+
+# ==========================
+# 4. RESTART HOME ASSISTANT
+# ==========================
+# After adding these to configuration.yaml:
+# Developer Tools > YAML > Check Configuration
+# Developer Tools > YAML > Restart

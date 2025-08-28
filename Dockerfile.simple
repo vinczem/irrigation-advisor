@@ -1,0 +1,33 @@
+ARG BUILD_FROM=python:3.11-alpine
+FROM $BUILD_FROM
+
+# Install basic dependencies
+RUN apk add --no-cache \
+    jq \
+    curl \
+    bash
+
+# Install Python packages
+RUN pip install --no-cache-dir \
+    paho-mqtt==2.1.0 \
+    requests
+
+# Copy addon files
+COPY rootfs /
+
+# Set permissions
+RUN chmod +x /run.sh
+RUN find /usr/bin -name "*.py" -exec chmod +x {} \;
+
+# Create data directory
+RUN mkdir -p /data
+
+# Set working directory  
+WORKDIR /
+
+# Simple health check
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=2 \
+    CMD curl -f http://localhost:8099/health || exit 1
+
+# Run the addon
+CMD ["/run.sh"]

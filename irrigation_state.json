@@ -1,0 +1,24 @@
+{
+  "last_recommendation": {
+    "timestamp": "2025-08-25T16:04:36.669142",
+    "amount_lpm2": 8.0,
+    "reason": "Megfelelő talajnedvesség",
+    "executed": true,
+    "execution_time": "2025-08-25T16:04:36.669388",
+    "execution_amount": 8.0,
+    "notes": "Home Assistant automatic irrigation"
+  },
+  "last_execution": null,
+  "irrigation_log": [
+    {
+      "timestamp": "2025-08-25T16:04:36.669142",
+      "amount_lpm2": 8.0,
+      "reason": "Megfelelő talajnedvesség",
+      "executed": true,
+      "execution_time": "2025-08-25T16:04:36.669388",
+      "execution_amount": 8.0,
+      "notes": "Home Assistant automatic irrigation"
+    }
+  ],
+  "version": "1.0"
+}

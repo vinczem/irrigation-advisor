@@ -1,0 +1,8 @@
+{
+  "api_key": "test_key_12345",
+  "latitude": 46.65,
+  "longitude": 20.14,
+  "mqtt_broker": "192.168.0.98",
+  "mqtt_port": 2883,
+  "update_interval": 60
+}

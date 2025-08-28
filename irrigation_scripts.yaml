@@ -1,0 +1,74 @@
+# HA OS 2025 Compatible Scripts
+# Add this section to your configuration.yaml
+
+script:
+  refresh_irrigation:
+    alias: "🔄 Refresh Irrigation Forecast"
+    description: "Manual irrigation forecast update"
+    icon: mdi:refresh-circle
+    mode: single
+    action:
+      # Use HA OS 2025 compatible addon communication
+      - action: hassio.addon_stdin
+        data:
+          addon: "local_irrigation_advisor_simple"
+          input: "python3 /usr/bin/mqtt_simple.py"
+          
+      - delay: 
+          seconds: 10  # Wait for MQTT response
+          
+      - action: notify.persistent_notification
+        data:
+          title: "✅ Irrigation Updated"
+          message: "Forecast refreshed at {{ now().strftime('%H:%M') }}"
+          notification_id: "irrigation_manual_refresh"
+          
+  execute_irrigation_manual:
+    alias: "💧 Execute Manual Irrigation"
+    description: "Execute irrigation with custom amount"
+    icon: mdi:sprinkler-variant
+    mode: single
+    fields:
+      amount:
+        description: "Water amount in L/m²"
+        example: "10.5"
+        selector:
+          number:
+            min: 1
+            max: 30
+            step: 0.5
+            unit_of_measurement: "L/m²"
+    action:
+      - action: hassio.addon_stdin
+        data:
+          addon: "local_irrigation_advisor_simple"
+          input: "python3 /usr/bin/mqtt_simple.py"
+      - delay:
+          seconds: 5
+      - action: notify.persistent_notification
+        data:
+          title: "Manual Irrigation"
+          message: "Manual irrigation executed: {{ amount }}L/m²"
+          notification_id: "manual_irrigation_executed"
+          
+  irrigation_debug:
+    alias: "🔍 Debug Irrigation System"
+    description: "Run diagnostics on irrigation system"
+    icon: mdi:bug-check
+    mode: single
+    action:
+      - action: hassio.addon_stdin
+        data:
+          addon: "local_irrigation_advisor_simple"
+          input: "python3 /usr/bin/debug_config.py"
+      - delay:
+          seconds: 3
+      - action: hassio.addon_stdin
+        data:
+          addon: "local_irrigation_advisor_simple"
+          input: "python3 /usr/bin/irrigation_cli.py status"
+      - action: notify.persistent_notification
+        data:
+          title: "Debug Complete"
+          message: "Irrigation system diagnostics completed"
+          notification_id: "irrigation_debug_complete"
