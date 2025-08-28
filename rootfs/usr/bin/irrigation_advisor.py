@@ -35,6 +35,7 @@ units = options.get("units", "metric")  # Default to metric if not specified
 
 def get_historical_data(days_back=7):
     """Get historical weather data for the past N days"""
+    print(f"📅 Getting historical weather data for the past {days_back} days...")
     historical_data = []
     
     for i in range(1, days_back + 1):
@@ -69,6 +70,7 @@ def get_historical_data(days_back=7):
 
 def get_current_weather():
     """Get current weather conditions"""
+    print(f"🌦️ Getting current weather data...")
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units={units}&lang=hu"
     
     try:
@@ -93,6 +95,7 @@ def get_current_weather():
 
 def get_forecast_data():
     """Get 5-day forecast data"""
+    print(f"📅 Getting 5-day forecast data...")
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units={units}&lang=hu"
     
     try:
@@ -175,6 +178,7 @@ def calculate_evapotranspiration(temp_max, humidity, wind_speed, cloud_cover):
     Simplified evapotranspiration calculation (Penman-Monteith inspired)
     Returns daily water loss in mm
     """
+    print(f"🌱 Calculating evapotranspiration...")
     # Base evapotranspiration for grass (rough estimate)
     base_et = 4.0  # mm/day for moderate conditions
     
@@ -204,6 +208,8 @@ def analyze_soil_moisture_history(historical_data):
     Analyze historical data to estimate current soil moisture deficit
     Returns estimated deficit in mm (can be negative if surplus)
     """
+    print(f"🌱 Analyzing soil moisture history..."
+          )
     net_balance = 0
     
     for day in historical_data:
@@ -239,8 +245,7 @@ def get_irrigation_recommendation():
     """
     Main function: analyze all data and provide irrigation recommendation
     """
-    print("🌱 Adatok gyűjtése az öntözési tanácshoz...")
-    
+    print("📅 Getting historical weather data...")
     # Collect all data
     historical = get_historical_data(7)  # Last 7 days
     current = get_current_weather()
