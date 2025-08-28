@@ -1,36 +1,31 @@
+
 #!/bin/bash
 # Home Assistant Addon Entry Point - Service Mode Only
 
-python3 -c "
-import http.server
-import socketserver
-import json
-from datetime import datetime
+# Configuration
+CONFIG_PATH=/data/options.json
+STATE_PATH=/data/irrigation_state.json
 
-ENABLE_AUTO_CHECK = \"$ENABLE_AUTO_CHECK\"
-CHECK_INTERVAL_MINUTES = $CHECK_INTERVAL_MINUTES
+echo "🏠 Starting Irrigation Advisor Addon..."
+echo "   config_path = $CONFIG_PATH"
+echo "   state_path = $STATE_PATH"
 
-class HealthHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == '/health':
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            health = {
-                'status': 'healthy',
-                'service': 'irrigation-advisor',
-                'timestamp': datetime.now().isoformat(),
-                'auto_checks': ENABLE_AUTO_CHECK,
-                'interval_minutes': CHECK_INTERVAL_MINUTES
-            }
-            self.wfile.write(json.dumps(health).encode())
-        else:
-            self.send_response(404)
-            self.end_headers()
+# Create required directories
+mkdir -p /data
+mkdir -p /share/irrigation
 
-with socketserver.TCPServer(('', 8099), HealthHandler) as httpd:
-    httpd.serve_forever()
-" &
+# Load configuration from options.json using jq
+if [ -f "$CONFIG_PATH" ]; then
+    API_KEY=$(jq -r '.api_key // empty' "$CONFIG_PATH")
+    LATITUDE=$(jq -r '.latitude // 46.65' "$CONFIG_PATH")
+    LONGITUDE=$(jq -r '.longitude // 20.14' "$CONFIG_PATH")
+    MQTT_BROKER=$(jq -r '.mqtt_broker // "core-mosquitto"' "$CONFIG_PATH")
+    MQTT_PORT=$(jq -r '.mqtt_port // 1883' "$CONFIG_PATH")
+    MQTT_USERNAME=$(jq -r '.mqtt_username // ""' "$CONFIG_PATH")
+    MQTT_PASSWORD=$(jq -r '.mqtt_password // ""' "$CONFIG_PATH")
+    LOG_LEVEL=$(jq -r '.log_level // "INFO"' "$CONFIG_PATH")
+    ENABLE_AUTO_CHECK=$(jq -r '.enable_auto_check // "true"' "$CONFIG_PATH")
+    CHECK_INTERVAL_MINUTES=$(jq -r '.check_interval_minutes // 30' "$CONFIG_PATH")
     echo "✅ Configuration loaded from $CONFIG_PATH"
     echo "   Location: $LATITUDE, $LONGITUDE"
     echo "   MQTT: $MQTT_BROKER:$MQTT_PORT"
@@ -38,6 +33,9 @@ with socketserver.TCPServer(('', 8099), HealthHandler) as httpd:
 else
     echo "❌ No configuration found at $CONFIG_PATH"
     exit 1
+fi
+
+# ...existing code...
 fi
 
 # Create options.json for Python scripts
