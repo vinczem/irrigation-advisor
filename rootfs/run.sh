@@ -125,8 +125,8 @@ class HealthHandler(http.server.SimpleHTTPRequestHandler):
                 'status': 'healthy',
                 'service': 'irrigation-advisor',
                 'timestamp': datetime.now().isoformat(),
-                'auto_checks': '$(bashio::config 'enable_auto_check' 'true')',
-                'interval_minutes': $(bashio::config 'check_interval_minutes' '30')
+                'auto_checks': ENABLE_AUTO_CHECK,
+                'interval_minutes': CHECK_INTERVAL_MINUTES
             }
             self.wfile.write(json.dumps(health).encode())
 
@@ -150,8 +150,8 @@ cleanup() {
 
 # Function for automatic irrigation checks
 irrigation_scheduler() {
-    local CHECK_INTERVAL_MINUTES=$(bashio::config 'check_interval_minutes' '30')
-    local ENABLE_AUTO_CHECK=$(bashio::config 'enable_auto_check' 'true')
+    local CHECK_INTERVAL_MINUTES="$CHECK_INTERVAL_MINUTES"
+    local ENABLE_AUTO_CHECK="$ENABLE_AUTO_CHECK"
     local next_check_time
     local current_time
 
@@ -193,11 +193,11 @@ irrigation_scheduler() {
             
             # Calculate and log next check time
             next_check_time=$(date -d "+${CHECK_INTERVAL_MINUTES} minutes" '+%Y-%m-%d %H:%M:%S')
-            bashio::log.info "⏰ Next irrigation check scheduled for: $next_check_time"
-            
+            echo "⏰ Next irrigation check scheduled for: $next_check_time"
+
         else
             current_time=$(date '+%Y-%m-%d %H:%M:%S')
-            bashio::log.debug "⏸️ [${current_time}] Auto checks disabled, skipping... (next check would be in ${CHECK_INTERVAL_MINUTES}min)"
+            echo "⏸️ [${current_time}] Auto checks disabled, skipping... (next check would be in ${CHECK_INTERVAL_MINUTES}min)"
         fi
         
         # Wait for next check (convert minutes to seconds)
