@@ -7,39 +7,36 @@ set -e
 CONFIG_PATH=/data/options.json
 STATE_PATH=/data/irrigation_state.json
 
-bashio::log.info "------------------------------------------"
-bashio::log.info "-=( run.sh version: 2.1.20250828_1941 )=-"
-bashio::log.info "🏠 Starting Irrigation Advisor Addon... 🏠"
+echo "🏠 Starting Irrigation Advisor Addon..."
+echo "   config_path = $CONFIG_PATH"
+echo "   state_path = $STATE_PATH"
 
 # Create required directories
 mkdir -p /data
 mkdir -p /share/irrigation
 
-# Load addon configuration from Home Assistant
-if bashio::config.exists 'api_key'; then
-    API_KEY=$(bashio::config 'api_key')
-    LATITUDE=$(bashio::config 'latitude')
-    LONGITUDE=$(bashio::config 'longitude')
-    MQTT_BROKER=$(bashio::config 'mqtt_broker')
-    MQTT_PORT=$(bashio::config 'mqtt_port')
-    MQTT_USERNAME=$(bashio::config 'mqtt_username')
-    MQTT_PASSWORD=$(bashio::config 'mqtt_password')
-    LOG_LEVEL=$(bashio::config 'log_level')
-    
-    bashio::log.info "✅ Configuration loaded from Home Assistant"
-    bashio::log.info "   Location: $LATITUDE, $LONGITUDE"
-    bashio::log.info "   MQTT: $MQTT_BROKER:$MQTT_PORT"
-    bashio::log.info "   Log level: $LOG_LEVEL"
+
+# Load configuration from options.json using jq
+if [ -f "$CONFIG_PATH" ]; then
+    API_KEY=$(jq -r '.api_key // empty' "$CONFIG_PATH")
+    LATITUDE=$(jq -r '.latitude // 46.65' "$CONFIG_PATH")
+    LONGITUDE=$(jq -r '.longitude // 20.14' "$CONFIG_PATH")
+    MQTT_BROKER=$(jq -r '.mqtt_broker // "core-mosquitto"' "$CONFIG_PATH")
+    MQTT_PORT=$(jq -r '.mqtt_port // 1883' "$CONFIG_PATH")
+    MQTT_USERNAME=$(jq -r '.mqtt_username // ""' "$CONFIG_PATH")
+    MQTT_PASSWORD=$(jq -r '.mqtt_password // ""' "$CONFIG_PATH")
+    LOG_LEVEL=$(jq -r '.log_level // "INFO"' "$CONFIG_PATH")
+    ENABLE_AUTO_CHECK=$(jq -r '.enable_auto_check // "true"' "$CONFIG_PATH")
+    CHECK_INTERVAL_MINUTES=$(jq -r '.check_interval_minutes // 30' "$CONFIG_PATH")
+    echo "✅ Configuration loaded from $CONFIG_PATH"
+    echo "   Location: $LATITUDE, $LONGITUDE"
+    echo "   MQTT: $MQTT_BROKER:$MQTT_PORT"
+    echo "   Log level: $LOG_LEVEL"
 else
-    bashio::log.error "❌ No configuration found"
+    echo "❌ No configuration found at $CONFIG_PATH"
     exit 1
 fi
 
-# check if options.json exists
-if [ ! -f /usr/bin/data/options.json ]; then
-    bashio::log.error "❌ options.json not found"
-    exit 1
-fi
 # Create options.json for Python scripts
 cat > /usr/bin/data/options.json << EOF
 {
@@ -56,28 +53,14 @@ cat > /usr/bin/mqtt_config.py << EOF
 MQTT_BROKER = "$MQTT_BROKER"
 MQTT_PORT = $MQTT_PORT
 MQTT_CLIENT_ID = "irrigation_advisor_addon"
-
-MQTT_USERNAME = $(if [ -n "$MQTT_USERNAME" ]; then echo "\"$MQTT_USERNAME\""; else echo "None"; fi)
-MQTT_PASSWORD = $(if [ -n "$MQTT_PASSWORD" ]; then echo "\"$MQTT_PASSWORD\""; else echo "None"; fi)
-
+MQTT_USERNAME = "$MQTT_USERNAME"
+MQTT_PASSWORD = "$MQTT_PASSWORD"
 MQTT_TOPIC_BASE = "irrigation/scheduler"
-
-MQTT_TOPICS = {
-    "raw": f"{MQTT_TOPIC_BASE}/raw",
-    "status": f"{MQTT_TOPIC_BASE}/status", 
-    "watering_required": f"{MQTT_TOPIC_BASE}/watering_required",
-    "water_amount": f"{MQTT_TOPIC_BASE}/water_amount",
-    "reason": f"{MQTT_TOPIC_BASE}/reason",
-    "temperature": f"{MQTT_TOPIC_BASE}/temperature",
-    "deficit": f"{MQTT_TOPIC_BASE}/soil_deficit",
-    "rain_forecast": f"{MQTT_TOPIC_BASE}/rain_forecast"
-}
-
 MQTT_QOS = 1
 MQTT_RETAIN = True
 EOF
 
-bashio::log.info "📝 Configuration files updated"
+echo "📝 Configuration files updated"
 
 # Set log level for Python scripts
 export LOG_LEVEL=$LOG_LEVEL
@@ -228,35 +211,37 @@ trap cleanup SIGTERM SIGINT
 # Start automatic irrigation scheduler
 irrigation_scheduler &
 SCHEDULER_PID=$!
-bashio::log.info "⏰ Irrigation scheduler started (PID: $SCHEDULER_PID)"
+echo "⏰ Irrigation scheduler started (PID: $SCHEDULER_PID)"
 
 # Wait and monitor services
-bashio::log.info "✅ Irrigation Advisor Addon is running"
-bashio::log.info "   - MQTT Listener: Active (listening for irrigation executions)"  
-bashio::log.info "   - Health Check: http://addon:8099/health"
-bashio::log.info "   - State File: /data/irrigation_state.json"
-bashio::log.info ""
-bashio::log.info "💡 To trigger recommendations:"
-bashio::log.info "   - Use Home Assistant automation to call: python3 /usr/bin/mqtt_simple.py"
-bashio::log.info "   - Or use shell_command service in HA configuration"
+echo "✅ Irrigation Advisor Addon is running"
+echo "   - MQTT Listener: Active (listening for irrigation executions)"  
+echo "   - Health Check: http://addon:8099/health"
+echo "   - State File: /data/irrigation_state.json"
+echo ""
+echo "💡 To trigger recommendations:"
+echo "   - Use Home Assistant automation to call: python3 /usr/bin/mqtt_simple.py"
+echo "   - Or use shell_command service in HA configuration"
 
 # Keep the container running and monitor child processes
 while true; do
     # Check if MQTT service is still running
     if ! kill -0 $SERVICE_PID 2>/dev/null; then
-        bashio::log.warning "⚠️  MQTT service died, restarting..."
+        echo "⚠️  MQTT service died, restarting..."
         python3 /usr/bin/mqtt_service.py &
         SERVICE_PID=$!
     fi
-    
     # Check if health service is still running  
     if ! kill -0 $HEALTH_PID 2>/dev/null; then
-        bashio::log.warning "⚠️  Health service died, restarting..."
+        echo "⚠️  Health service died, restarting..."
         python3 -c "
 import http.server
 import socketserver
 import json
 from datetime import datetime
+
+ENABLE_AUTO_CHECK = '$ENABLE_AUTO_CHECK'
+CHECK_INTERVAL_MINUTES = $CHECK_INTERVAL_MINUTES
 
 class HealthHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -268,23 +253,24 @@ class HealthHandler(http.server.SimpleHTTPRequestHandler):
                 'status': 'healthy',
                 'service': 'irrigation-advisor',
                 'timestamp': datetime.now().isoformat(),
-                'auto_checks': '$(bashio::config 'enable_auto_check' 'true')',
-                'interval_minutes': $(bashio::config 'check_interval_minutes' '30')
+                'auto_checks': ENABLE_AUTO_CHECK,
+                'interval_minutes': CHECK_INTERVAL_MINUTES
             }
             self.wfile.write(json.dumps(health).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
 
 with socketserver.TCPServer(('', 8099), HealthHandler) as httpd:
     httpd.serve_forever()
 " &
         HEALTH_PID=$!
     fi
-    
     # Check if scheduler is still running
     if ! kill -0 $SCHEDULER_PID 2>/dev/null; then
-        bashio::log.warning "⚠️  Irrigation scheduler died, restarting..."
+        echo "⚠️  Irrigation scheduler died, restarting..."
         irrigation_scheduler &
         SCHEDULER_PID=$!
     fi
-    
     sleep 30
 done
