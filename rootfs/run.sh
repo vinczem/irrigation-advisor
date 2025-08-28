@@ -171,9 +171,11 @@ irrigation_scheduler() {
             # Run irrigation check with enhanced logging
             if python3 /usr/bin/mqtt_simple.py > /tmp/irrigation_check.log 2>&1; then
 
-                with open('/tmp/irrigation_check.log', 'r') as f:
-                    print(f.read())
-
+                # write logfile to console
+                cat /tmp/irrigation_check.log | while IFS= read -r line; do
+                    echo "   $line"
+                done
+                
                 current_time=$(date '+%Y-%m-%d %H:%M:%S')
                 echo "✅ [${current_time}] Automatic irrigation check completed successfully"
 
