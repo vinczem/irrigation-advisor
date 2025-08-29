@@ -8,7 +8,7 @@ import json
 import sys
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import paho.mqtt.client as mqtt
 import time
 
@@ -123,41 +123,39 @@ class MQTTIrrigationService:
         self.publish_status_update()
     
     def publish_status_update(self):
-        """Publish status update to MQTT"""
+        """Publish status update to MQTT (naplóalapú)"""
         try:
             summary = self.get_status_summary()
             status_topic = f"{self.mqtt_config['MQTT_TOPIC_BASE']}/addon_status"
-            
             status_message = {
                 "timestamp": datetime.now().isoformat(),
-                "last_execution": summary["last_recommendation"]["time"] if summary["last_recommendation"]["executed"] else None,
-                "pending_count": summary["pending_recommendations"],
-                "recent_24h_amount": summary["recent_24h"]["total_amount"]
+                "last_execution": summary["last_execution"],
+                "recent_24h_amount": summary["recent_24h_amount"],
+                "recent_24h_count": summary["recent_24h_count"]
             }
-            
             self.client.publish(status_topic, json.dumps(status_message), qos=1, retain=True)
             logger.info(f"Status update published to {status_topic}")
-            
         except Exception as e:
             logger.error(f"Error publishing status: {e}")
     
     def get_status_summary(self):
-        """Get status summary"""
-        last_rec = self.state["last_recommendation"]
-        recent = [entry for entry in self.state["irrigation_log"] 
-                 if entry["executed"] and entry["execution_time"]]
-        
+        """Get status summary (naplóalapú)"""
+        # Legutóbbi locsolás (manual vagy advisor)
+        last_execution = None
+        for entry in reversed(self.state["irrigation_log"]):
+            if entry.get("type") in ["manual", "advisor"]:
+                last_execution = entry["timestamp"][:19]
+                break
+        # Utolsó 24 óra locsolásai
+        cutoff = datetime.now() - timedelta(hours=24)
+        recent = [e for e in self.state["irrigation_log"]
+                  if datetime.fromisoformat(e["timestamp"]) > cutoff and e.get("type") in ["manual", "advisor"]]
+        recent_24h_amount = sum(e["amount_lpm2"] or 0 for e in recent)
+        recent_24h_count = len(recent)
         return {
-            "last_recommendation": {
-                "time": last_rec["timestamp"][:19] if last_rec else None,
-                "amount": last_rec["amount_lpm2"] if last_rec else 0,
-                "executed": last_rec["executed"] if last_rec else False
-            },
-            "recent_24h": {
-                "count": len(recent),
-                "total_amount": sum(e["execution_amount"] or 0 for e in recent)
-            },
-            "pending_recommendations": len([e for e in self.state["irrigation_log"] if not e["executed"]])
+            "last_execution": last_execution,
+            "recent_24h_amount": recent_24h_amount,
+            "recent_24h_count": recent_24h_count
         }
     
     def on_connect(self, client, userdata, flags, rc):
