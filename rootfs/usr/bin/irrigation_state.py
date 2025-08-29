@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timedelta
 
 # State file for tracking irrigation
-STATE_FILE = "irrigation_state.json"
+STATE_FILE = "/data/irrigation_state.json" if os.path.exists("/data") else "irrigation_state.json"
 
 class SimpleIrrigationState:
     def __init__(self):
