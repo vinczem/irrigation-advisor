@@ -72,21 +72,21 @@ class SimpleIrrigationState:
         return len(self.state["irrigation_log"]) - 1  # Return index
     
     def mark_executed(self, execution_amount=None, notes=""):
-        """Manually mark last recommendation as executed"""
-        if self.state["last_recommendation"] and not self.state["last_recommendation"]["executed"]:
-            self.state["last_recommendation"]["executed"] = True
-            self.state["last_recommendation"]["execution_time"] = datetime.now().isoformat()
-            self.state["last_recommendation"]["execution_amount"] = execution_amount or self.state["last_recommendation"]["amount_lpm2"]
-            
+        """Mark the most recent pending recommendation as executed"""
+        # Find the most recent pending recommendation
+        pending_entry = None
+        for entry in reversed(self.state["irrigation_log"]):
+            if not entry["executed"]:
+                pending_entry = entry
+                break
+        if pending_entry:
+            pending_entry["executed"] = True
+            pending_entry["execution_time"] = datetime.now().isoformat()
+            pending_entry["execution_amount"] = execution_amount or pending_entry["amount_lpm2"]
             if notes:
-                self.state["last_recommendation"]["notes"] = notes
-            
-            # Update in log as well
-            for entry in reversed(self.state["irrigation_log"]):
-                if not entry["executed"] and entry["timestamp"] == self.state["last_recommendation"]["timestamp"]:
-                    entry.update(self.state["last_recommendation"])
-                    break
-            
+                pending_entry["notes"] = notes
+            # Update last_recommendation as well
+            self.state["last_recommendation"] = pending_entry
             self.save_state()
             print(f"✅ Marked as executed: {execution_amount or 'recommended amount'}L/m²")
         else:
