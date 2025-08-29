@@ -259,6 +259,18 @@ def get_irrigation_recommendation():
     
     # Analyze current situation
     soil_deficit = analyze_soil_moisture_history(historical)
+    # Vegyük figyelembe a legutóbbi öntözést
+    state_file = "/data/irrigation_state.json" if os.path.exists("/data/irrigation_state.json") else "irrigation_state.json"
+    try:
+        with open(state_file, "r", encoding="utf-8") as f:
+            state = json.load(f)
+        last_executed = state.get("last_executed")
+        executed_amount = last_executed["amount_lpm2"] if last_executed else 0
+        soil_deficit = max(0, soil_deficit - executed_amount)
+        if executed_amount > 0:
+            print(f"💧 Legutóbbi öntözés: {executed_amount} mm levonva a hiányból")
+    except Exception as e:
+        print(f"⚠️ Nem sikerült beolvasni az öntözési állapotot: {e}")
     
     # Check if it's currently raining
     currently_raining = current['is_raining']
