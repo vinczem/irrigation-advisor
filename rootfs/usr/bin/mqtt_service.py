@@ -105,27 +105,31 @@ class MQTTIrrigationService:
             logger.error(f"Error saving state: {e}")
     
     def mark_executed(self, amount, notes=""):
-        """Mark irrigation as executed"""
-        if self.state["last_recommendation"] and not self.state["last_recommendation"]["executed"]:
-            self.state["last_recommendation"]["executed"] = True
-            self.state["last_recommendation"]["execution_time"] = datetime.now().isoformat()
-            self.state["last_recommendation"]["execution_amount"] = amount
-            
+        """Mark the most recent pending recommendation as executed"""
+        print("[DEBUG] mark_executed called with amount:", amount, "notes:", notes)
+        # Find the most recent pending recommendation
+        pending_entry = None
+        for entry in reversed(self.state["irrigation_log"]):
+            print("[DEBUG] Checking entry:", entry)
+            if not entry["executed"]:
+                pending_entry = entry
+                print("[DEBUG] Found pending entry:", pending_entry)
+                break
+        if pending_entry:
+            print("[DEBUG] Marking entry as executed:", pending_entry)
+            pending_entry["executed"] = True
+            pending_entry["execution_time"] = datetime.now().isoformat()
+            pending_entry["execution_amount"] = amount or pending_entry["amount_lpm2"]
             if notes:
-                self.state["last_recommendation"]["notes"] = notes
-            
-            # Update in log
-            for entry in reversed(self.state["irrigation_log"]):
-                if not entry["executed"] and entry["timestamp"] == self.state["last_recommendation"]["timestamp"]:
-                    entry.update(self.state["last_recommendation"])
-                    break
-            
+                pending_entry["notes"] = notes
+            # Update last_recommendation as well
+            self.state["last_recommendation"] = pending_entry
             self.save_state()
+            print(f"[DEBUG] Irrigation marked as executed: {amount}L/m² - {notes}")
             logger.info(f"Irrigation marked as executed: {amount}L/m² - {notes}")
-            
-            # Publish confirmation
             self.publish_status_update()
         else:
+            print("[DEBUG] No pending recommendation to mark as executed")
             logger.warning("No pending recommendation to mark as executed")
     
     def publish_status_update(self):
