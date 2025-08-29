@@ -70,6 +70,21 @@ class SimpleIrrigationState:
         self.save_state()
         print(f"📝 Recommendation logged: {amount}L/m² - {reason}")
         return len(self.state["irrigation_log"]) - 1  # Return index
+        def log_recommendation(self, amount, reason):
+            """Log irrigation recommendation as a log entry"""
+            entry = {
+                "timestamp": datetime.now().isoformat(),
+                "amount_lpm2": amount,
+                "reason": reason,
+                "type": "advisor"
+            }
+            self.state["irrigation_log"].append(entry)
+            # Keep only last 50 entries
+            if len(self.state["irrigation_log"]) > 50:
+                self.state["irrigation_log"] = self.state["irrigation_log"][-50:]
+            self.save_state()
+            print(f"📝 Recommendation logged: {amount}L/m² - {reason}")
+            return len(self.state["irrigation_log"]) - 1
     
     def mark_executed(self, execution_amount=None, notes=""):
         """Mark the most recent pending recommendation as executed"""
@@ -91,6 +106,20 @@ class SimpleIrrigationState:
             print(f"✅ Marked as executed: {execution_amount or 'recommended amount'}L/m²")
         else:
             print("⚠️ No pending recommendation to mark as executed")
+        def mark_executed(self, execution_amount=None, notes=""):
+            """Log a new irrigation execution entry"""
+            entry = {
+                "timestamp": datetime.now().isoformat(),
+                "amount_lpm2": execution_amount,
+                "notes": notes,
+                "type": "manual"
+            }
+            self.state["irrigation_log"].append(entry)
+            # Keep only last 50 entries
+            if len(self.state["irrigation_log"]) > 50:
+                self.state["irrigation_log"] = self.state["irrigation_log"][-50:]
+            self.save_state()
+            print(f"✅ Manual irrigation logged: {execution_amount}L/m² - {notes}")
     
     def get_recent_irrigation(self, hours=24):
         """Get recent executed irrigation"""
@@ -104,6 +133,15 @@ class SimpleIrrigationState:
                     recent.append(entry)
         
         return recent
+        def get_recent_irrigation(self, hours=24):
+            """Get recent irrigation executions (manual or advisor)"""
+            cutoff = datetime.now() - timedelta(hours=hours)
+            recent = []
+            for entry in reversed(self.state["irrigation_log"]):
+                entry_time = datetime.fromisoformat(entry["timestamp"])
+                if entry_time > cutoff and entry.get("type") in ["manual", "advisor"]:
+                    recent.append(entry)
+            return recent
     
     def should_skip_recommendation(self, hours=6):
         """Check if should skip due to recent irrigation"""
@@ -118,6 +156,15 @@ class SimpleIrrigationState:
                 return True, total_amount
         
         return False, 0
+        def should_skip_recommendation(self, hours=6):
+            """Check if should skip due to recent irrigation"""
+            recent = self.get_recent_irrigation(hours)
+            if recent:
+                total_amount = sum(entry["amount_lpm2"] or 0 for entry in recent)
+                print(f"ℹ️ Recent irrigation in last {hours}h: {total_amount}L/m²")
+                if total_amount > 5:
+                    return True, total_amount
+            return False, 0
     
     def get_status_summary(self):
         """Get current status summary"""
