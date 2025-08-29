@@ -211,7 +211,17 @@ def analyze_soil_moisture_history(historical_data):
     print(f"🌱 Analyzing soil moisture history..."
           )
     net_balance = 0
-    
+    # Betöltjük az öntözési naplót
+    state_file = "/data/irrigation_state.json" if os.path.exists("/data/irrigation_state.json") else "irrigation_state.json"
+    irrigation_log = []
+    try:
+        with open(state_file, "r", encoding="utf-8") as f:
+            state = json.load(f)
+            irrigation_log = state.get("irrigation_log", [])
+    except Exception as e:
+        print(f"⚠️ Nem sikerült beolvasni az öntözési naplót: {e}")
+
+    # Napra lebontva hozzáadjuk a locsolásokat a csapadékhoz
     for day in historical_data:
         # Calculate daily water loss
         et = calculate_evapotranspiration(
@@ -220,24 +230,25 @@ def analyze_soil_moisture_history(historical_data):
             day['wind_speed'], 
             day['cloud_cover']
         )
-        
         # Water gained from precipitation
         water_gained = day['precipitation']
-        
+        # Hozzáadjuk az adott napra eső locsolásokat
+        day_date = day['date'] if 'date' in day else None
+        if day_date:
+            for entry in irrigation_log:
+                entry_date = entry.get('timestamp', '')[:10]
+                if entry_date == day_date and entry.get('type') in ['manual', 'advisor']:
+                    water_gained += entry.get('amount_lpm2', 0)
+                    print(f"💧 {day_date}: {entry.get('amount_lpm2', 0)} mm locsolás hozzáadva a csapadékhoz")
         # Net balance for this day (positive = surplus, negative = deficit)
         daily_balance = water_gained - et
         net_balance += daily_balance
-    
     # Convert to deficit (positive = deficit, negative = surplus)
     deficit = -net_balance
-    
     # Soil can't hold infinite water - assume max 30mm excess capacity
-    # If we have more than 30mm surplus, the rest runs off
     if deficit < -30:
         deficit = -30
-    
     # Soil moisture deficit can't be less than 0 (well-watered)
-    # But we allow small negative values to indicate recent good watering
     return max(-30, deficit)
 
 
