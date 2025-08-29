@@ -105,7 +105,7 @@ class MQTTIrrigationService:
             logger.error(f"Error saving state: {e}")
     
     def mark_executed(self, amount, notes=""):
-        """Log a new irrigation execution entry"""
+        """Log a new irrigation execution entry and update last_executed"""
         print("[DEBUG] mark_executed called with amount:", amount, "notes:", notes)
         entry = {
             "timestamp": datetime.now().isoformat(),
@@ -114,6 +114,7 @@ class MQTTIrrigationService:
             "type": "manual"
         }
         self.state["irrigation_log"].append(entry)
+        self.state["last_executed"] = entry
         # Keep only last 50 entries
         if len(self.state["irrigation_log"]) > 50:
             self.state["irrigation_log"] = self.state["irrigation_log"][-50:]
@@ -130,6 +131,7 @@ class MQTTIrrigationService:
             status_message = {
                 "timestamp": datetime.now().isoformat(),
                 "last_execution": summary["last_execution"],
+                "last_execution_amount": summary["last_execution_amount"],
                 "recent_24h_amount": summary["recent_24h_amount"],
                 "recent_24h_count": summary["recent_24h_count"]
             }
@@ -137,23 +139,21 @@ class MQTTIrrigationService:
             logger.info(f"Status update published to {status_topic}")
         except Exception as e:
             logger.error(f"Error publishing status: {e}")
-    
+        
     def get_status_summary(self):
-        """Get status summary (naplóalapú)"""
-        # Legutóbbi locsolás (manual vagy advisor)
-        last_execution = None
-        for entry in reversed(self.state["irrigation_log"]):
-            if entry.get("type") in ["manual", "advisor"]:
-                last_execution = entry["timestamp"][:19]
-                break
+        """Get status summary (last_executed mezővel)"""
+        last_executed = self.state.get("last_executed")
+        last_execution = last_executed["timestamp"][:19] if last_executed else None
+        last_execution_amount = last_executed["amount_lpm2"] if last_executed else 0
         # Utolsó 24 óra locsolásai
         cutoff = datetime.now() - timedelta(hours=24)
         recent = [e for e in self.state["irrigation_log"]
-                  if datetime.fromisoformat(e["timestamp"]) > cutoff and e.get("type") in ["manual", "advisor"]]
+                if datetime.fromisoformat(e["timestamp"]) > cutoff and e.get("type") in ["manual", "advisor"]]
         recent_24h_amount = sum(e["amount_lpm2"] or 0 for e in recent)
         recent_24h_count = len(recent)
         return {
             "last_execution": last_execution,
+            "last_execution_amount": last_execution_amount,
             "recent_24h_amount": recent_24h_amount,
             "recent_24h_count": recent_24h_count
         }
