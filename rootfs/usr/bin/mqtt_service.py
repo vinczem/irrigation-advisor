@@ -158,18 +158,16 @@ class MQTTIrrigationService:
             "recent_24h_count": recent_24h_count
         }
     
-    def on_connect(self, client, userdata, flags, rc):
-        """MQTT connection callback"""
-        if rc == 0:
+    def on_connect(self, client, userdata, flags, reasonCode, properties=None):
+        """MQTT connection callback (API v2)"""
+        if reasonCode == 0:
             logger.info(f"Connected to MQTT broker: {self.mqtt_config['MQTT_BROKER']}:{self.mqtt_config['MQTT_PORT']}")
-            
             # Subscribe to execution commands from Home Assistant
             execution_topic = f"{self.mqtt_config['MQTT_TOPIC_BASE']}/execute"
             client.subscribe(execution_topic)
             logger.info(f"Subscribed to {execution_topic}")
-            
         else:
-            logger.error(f"MQTT connection failed: {rc}")
+            logger.error(f"MQTT connection failed: {reasonCode}")
     
     def on_message(self, client, userdata, msg):
         """Handle MQTT messages"""
@@ -203,8 +201,8 @@ class MQTTIrrigationService:
         """Start MQTT service"""
         try:
             self.client = mqtt.Client(
-                callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-                client_id=self.mqtt_config['MQTT_CLIENT_ID']
+                client_id=self.mqtt_config['MQTT_CLIENT_ID'],
+                callback_api_version=2
             )
             
             self.client.on_connect = self.on_connect

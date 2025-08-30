@@ -141,8 +141,8 @@ def publish_simple_message(message):
     mqtt_config = load_addon_config()
     
     try:
-        client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1, client_id=mqtt_config['MQTT_CLIENT_ID'])
-        
+        # client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1, client_id=mqtt_config['MQTT_CLIENT_ID'])
+        client = mqtt.Client(client_id=mqtt_config['MQTT_CLIENT_ID'], callback_api_version=2)
         # Set credentials if provided
         if mqtt_config['MQTT_USERNAME'] and mqtt_config['MQTT_PASSWORD']:
             client.username_pw_set(mqtt_config['MQTT_USERNAME'], mqtt_config['MQTT_PASSWORD'])
