@@ -92,7 +92,7 @@ class HealthHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-with socketserver.TCPServer(('', 8099), HealthHandler) as httpd:
+with socketserver.TCPServer(('', 8100), HealthHandler) as httpd:
     httpd.serve_forever()
 " &
 
@@ -133,11 +133,11 @@ class HealthHandler(http.server.SimpleHTTPRequestHandler):
             }
             self.wfile.write(json.dumps(health).encode())
 
-with socketserver.TCPServer(('', 8099), HealthHandler) as httpd:
+with socketserver.TCPServer(('', 8100), HealthHandler) as httpd:
     httpd.serve_forever()
 " &
 HEALTH_PID=$!
-echo "🏥 Health service started on port 8099 (PID: $HEALTH_PID)"
+echo "🏥 Health service started on port 8100 (PID: $HEALTH_PID)"
 
 # Function to handle shutdown
 cleanup() {
@@ -225,7 +225,7 @@ echo "⏰ Irrigation scheduler started (PID: $SCHEDULER_PID)"
 # Wait and monitor services
 echo "✅ Irrigation Advisor Addon is running"
 echo "   - MQTT Listener: Active (listening for irrigation executions)"  
-echo "   - Health Check: http://addon:8099/health"
+echo "   - Health Check: http://addon:8100/health"
 echo "   - State File: /data/irrigation_state.json"
 echo ""
 echo "💡 To trigger recommendations:"
@@ -270,7 +270,7 @@ class HealthHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-with socketserver.TCPServer(('', 8099), HealthHandler) as httpd:
+with socketserver.TCPServer(('', 8100), HealthHandler) as httpd:
     httpd.serve_forever()
 " &
         HEALTH_PID=$!

@@ -203,7 +203,7 @@ class MQTTIrrigationService:
         """Start MQTT service"""
         try:
             self.client = mqtt.Client(
-                callback_api_version=mqtt.CallbackAPIVersion.VERSION1,
+                callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
                 client_id=self.mqtt_config['MQTT_CLIENT_ID']
             )
             

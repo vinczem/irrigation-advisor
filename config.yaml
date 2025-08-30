@@ -1,5 +1,5 @@
 name: "Irrigation Advisor"
-version: "2.1.20250830_1102"
+version: "2.1.20250830_1108"
 slug: "irrigation_advisor"  
 description: "Simple irrigation advisor with automatic scheduler and timestamped logging"
 url: "https://github.com/vinczem/irrigation-advisor"
