@@ -115,6 +115,9 @@ import socketserver
 import json
 from datetime import datetime
 
+ENABLE_AUTO_CHECK = '${ENABLE_AUTO_CHECK}'
+CHECK_INTERVAL_MINUTES = int('${CHECK_INTERVAL_MINUTES}')
+
 class HealthHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/health':
